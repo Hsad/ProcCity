@@ -7,8 +7,8 @@
 	var geometry;
 	var material;
 	var plane;
-	var planeWidth = 1;
-	var planeHeight = 1;
+	var planeWidth = 2;
+	var planeHeight = 2;
 	var planeSubDiv = 100;
 	var lastTime = Date.now();
 	var currentTime = 0;
@@ -25,6 +25,11 @@
 	var gui = new dat.GUI();
 	var savedInt = 0;
 	var GradientGrid;
+	
+	var LineMat;
+	var lineMesh;
+	var raycaster;
+	
 
 function init(){
 	scene = new THREE.Scene();
@@ -37,20 +42,20 @@ function init(){
 	camControls.addEventListener( 'change', render);
 	
 	geometry = new THREE.PlaneGeometry(planeWidth,planeHeight,planeSubDiv,planeSubDiv);  //range is 0 to 10200 or x0-100 y0-100
-	material = new THREE.MeshLambertMaterial( { color: 0x19A81E , wireframe:true} );
+	geometry.translate(0,0,-0.003)
+	material = new THREE.MeshLambertMaterial( { color: 0x002200 } );
 	plane = new THREE.Mesh( geometry, material );
 	scene.add( plane );
 	
-	directionalLight = new THREE.DirectionalLight( 0xf0000f, 100 );
+	directionalLight = new THREE.DirectionalLight( 0x555555, 100 );
 	directionalLight.position.set( 1, 10,1 );
 	directionalLight.rotation.x = 0.8;
 	scene.add( directionalLight );
 	
-	pointLight = new THREE.PointLight( 0xff0000, 1, 5 );
-	pointLight.position.set( 0, 0, 2 );
-	scene.add( pointLight );
-	
+	LineMat = new THREE.LineBasicMaterial( { color: 0x444444 } );
 	//projector = new THREE.Projector();
+	raycaster = new THREE.Raycaster();
+	raycaster.linePrecision = 0.001;
 
 	camera.position.z = 2;
 	camera.position.y = -1; //lil hight boost, lil less
@@ -62,15 +67,6 @@ function init(){
 	window.addEventListener("resize", onWindowResize, false);
 	
 	
-	verts = plane.geometry.vertices;
-	/*
-	for (var vert = 0; vert < verts.length; vert++){
-		verts[vert].z = Math.random() / planeSubDiv;  //random terrain noise
-		//console.log(verts[vert]);
-	}
-	plane.verticesNeedUpdate;
-	*/
-	//cycleVerts();
 	Math.seedrandom(0)
 	console.log(Math.random());
 	
@@ -81,106 +77,57 @@ function init(){
 	
 	gui.add(options, "randomSeed", 0, 30);
 	
-	//randomMovement();
+	drawLine(1,1,0,0);
+	recursiveLine([0,0], 0, 40);
+}
+
+function drawLine(point1x, point1y, point2x, point2y){
+	var geo = new THREE.Geometry();
+	geo.vertices.push(new THREE.Vector3(point1x, point1y, 0), new THREE.Vector3(point2x, point2y, 0));
+	var mesh = new THREE.Line(geo, LineMat);
+	scene.add(mesh);
+}
+
+function drawLineAngle(point1x, point1y, angle){
+	var point2x = Math.cos(angle)*0.01 + point1x;
+	var point2y = Math.sin(angle)*0.01 + point1y;
+	if (checkOverlap([point1x, point1y,0], [point2x, point2y, 0]) == false){
+		drawLine(point1x, point1y, point2x, point2y);
+		return [point2x, point2y];
+	} else {
+		return false;
+	}
+}
+
+function checkOverlap(vec1, vec2){
+	raycaster.set(vec1, vec2 - vec1);
+	var interscets = raycaster.intersectObject(lineMesh);
+	if (interscets.length > 0){
+		return false;
+	}
+	return true;
+}
+
+function Lsystem(){
 	
-	createGradientGrid(11,11);
-	perlinTerrain();
 }
 
-function perlinTerrain(){
-	for (var y = 0; y < planeSubDiv; y++){
-		for (var x = 0; x<planeSubDiv; x++){
-			verts[(y*planeSubDiv) + x].z = perlin(x/(planeSubDiv/10),y/(planeSubDiv/10)) / 10;  //random terrain noise
-			//console.log(verts[vert]);
-		}		
+function recursiveLine(last, angle, step){
+	console.log(step);
+	if (step == 0){	return 0;}	
+	else{step = step - 1;}
+	angle += (Math.random() - 0.5);
+	//would change angle or branch here
+	last = drawLineAngle(last[0], last[1], angle);
+	if (last != false){	//check to see if the road section did not overlap
+		recursiveLine(last, angle, step); 
+		if (Math.random() > 0.9){
+			//angle = angle+PI/2;
+			recursiveLine(last, angle+PI/2, step);
+		}
+	return 0;
 	}
-	plane.geometry.verticesNeedUpdate = true;
 }
-
-function lerp(a0, a1, w) {
-     return (1.0 - w)*a0 + w*a1;  //lerp two values 
- }
- 
- function dotGridGradient(ix, iy, x, y) {
- 
-     // Precomputed (or otherwise) gradient vectors at each grid point X,Y
-     //Uhhh Done?
-	 
-     // Compute the distance vector
-	 console.log(x);
-	 console.log(ix);
-     var dx = x - ix;
-     var dy = y - iy;
- 
-     // Compute the dot-product
-     return (dx*GradientGrid[iy][ix][0] + dy*GradientGrid[iy][ix][1]);
- }
- 
- //need function to create grid of random unit vectors
- function createGradientGrid(X,Y){
-	 var grid = [];
-	 for (var y = 0; y<Y; y++){
-		 grid.push([]);
-		 for(var x = 0; x<X; x++){
-			 var randAngle = Math.random() * 6.28;
-			 grid[y].push([Math.cos(randAngle),Math.sin(randAngle)]);
-		 }
-	 }
-	 console.log(grid);
-	 GradientGrid = grid;
- }
- 
- // Compute Perlin noise at coordinates x, y
- function perlin(x, y) {
- 
-     // Determine grid cell coordinates
-     var x0 = ((x >= 0.0) ? parseInt(x) : parseInt(x) - 1);
-     var x1 = x0 + 1;
-     var y0 = ((y >= 0.0) ? parseInt(y) : parseInt(y) - 1);
-     var y1 = y0 + 1;
- 
-     // Determine interpolation weights
-     // Could also use higher order polynomial/s-curve here
-     var sx = x - x0;
-     var sy = y - y0;
- 
-     // Interpolate between grid point gradients
-     var n0, n1, ix0, ix1, value;
-	 console.log(x);
-	 console.log(x0);
-     n0 = dotGridGradient(x0, y0, x, y);
-     n1 = dotGridGradient(x1, y0, x, y);
-     ix0 = lerp(n0, n1, sx);
-     n0 = dotGridGradient(x0, y1, x, y);
-     n1 = dotGridGradient(x1, y1, x, y);
-     ix1 = lerp(n0, n1, sx);
-     value = lerp(ix0, ix1, sy);
- 
-     return value;
- }
-
-function randomMovement(){
-	Math.seedrandom(options.randomSeed);
-	for (var vert = 0; vert < verts.length; vert++){
-		verts[vert].z = Math.random() / planeSubDiv;  //random terrain noise
-		//console.log(verts[vert]);
-	}
-	plane.geometry.verticesNeedUpdate = true;
-}
-
-function cycleVerts(){  //individualy moves one vertex to see the order of the vertexes.
-	//console.log(vertIndex);
-	//console.log(verts);
-	verts[vertIndex].z = 0;
-	vertIndex++;
-	if (vertIndex >= verts.length){
-		vertIndex = 0;
-	}
-	verts[vertIndex].z = 0.3;
-	
-	plane.geometry.verticesNeedUpdate = true;
-}
-
 
 function render() {
 	//cycleVerts();
