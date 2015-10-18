@@ -29,6 +29,9 @@
 	var LineMat;
 	var lineMesh;
 	var raycaster;
+
+	//base stuff
+	var basicMaterial;
 	
 
 function init(){
@@ -57,6 +60,8 @@ function init(){
 	raycaster = new THREE.Raycaster();
 	raycaster.linePrecision = 0.001;
 
+	basicMaterial = new THREE.MeshBasicMaterial({ color: 0xff5555	});
+
 	camera.position.z = 2;
 	camera.position.y = -1; //lil hight boost, lil less
 	camera.position.x = 0; 
@@ -78,7 +83,35 @@ function init(){
 	gui.add(options, "randomSeed", 0, 30);
 	
 	drawLine(1,1,0,0);
-	recursiveLine([0,0], 0, 40);
+	//recursiveLine([0,0], 0, 40);
+	
+	debugFunc();
+	var tempVec = new THREE.Vector2();
+	console.log(tempVec.x);
+	console.log(tempVec.y);
+	var array = [];
+	array.push(true);
+	array.push(true);
+	array.push(false);
+	array.push(true);
+	console.log(array);
+	array[1] = false
+	console.log(array);
+}
+
+function debugFunc(){
+	var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.01,0.01,0.01), basicMaterial);
+	scene.add(mesh);
+	var mesh2 = new THREE.Mesh(new THREE.BoxGeometry(0.01,0.01,0.01), basicMaterial);
+	scene.add(mesh2);
+	mesh.position.set(0,0,0);
+	var x = 0.3;
+	var y = 0.0003;
+	mesh2.position.set(x,y,0);
+	console.log(Math.atan2(y, x)); //atan2 is y,x
+	var ang = Math.atan2(y, x);
+	drawLine(0,0,Math.cos(ang), Math.sin(ang));
+
 }
 
 function drawLine(point1x, point1y, point2x, point2y){
