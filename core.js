@@ -86,17 +86,15 @@ function init(){
 	//recursiveLine([0,0], 0, 40);
 	
 	debugFunc();
-	var tempVec = new THREE.Vector2();
-	console.log(tempVec.x);
-	console.log(tempVec.y);
-	var array = [];
-	array.push(true);
-	array.push(true);
-	array.push(false);
-	array.push(true);
-	console.log(array);
-	array[1] = false
-	console.log(array);
+	var LSys = new LSystem(); 
+	//what is this passed?  A city type?  a seed?  Do I create many
+	//and those are placed out in the world and eventually connect to each other?
+	//Do I need an infulence map?
+	//can I create that in code and generate it procedurally?
+	//do I even need to worry about that at the moment?
+	//is there a good way to get the road system to build visably
+	//probably by starting it here and having it update the stack once per update
+
 }
 
 function debugFunc(){
@@ -132,16 +130,8 @@ function drawLineAngle(point1x, point1y, angle){
 	}
 }
 
-function checkOverlap(vec1, vec2){
-	raycaster.set(vec1, vec2 - vec1);
-	var interscets = raycaster.intersectObject(lineMesh);
-	if (interscets.length > 0){
-		return false;
-	}
-	return true;
-}
-
 function Lsystem(){
+
 	
 }
 
