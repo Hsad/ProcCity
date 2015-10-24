@@ -14,3 +14,8 @@ RoadNode.prototype.AddAdjNode = function(Node){
 	this.AdjNodes.push(Node);
 	this.NodeVisited.push(false);
 }
+
+RoadNode.prototype.GiveParent = function(parentNode){
+	this.AddAdjNode(parentNode);
+	parentNode.AddAdjNode(this);
+}

@@ -30,9 +30,11 @@
 	var lineMesh;
 	var raycaster;
 
+	var delay = 30;
+	var LSys;
+
 	//base stuff
 	var basicMaterial;
-	
 
 function init(){
 	scene = new THREE.Scene();
@@ -82,11 +84,20 @@ function init(){
 	
 	gui.add(options, "randomSeed", 0, 30);
 	
-	drawLine(1,1,0,0);
-	//recursiveLine([0,0], 0, 40);
+	//drawLine(1,1,0,0);
+	//recursiveLine([0,0], 0, 4);
 	
-	debugFunc();
-	var LSys = new LSystem(); 
+	//debugFunc();
+
+	var vec2 = new THREE.Vector2(1,0);
+	console.log(vec2);
+	var vec22 = vec2.rotateAround({x:0, y:0}, Math.PI/2);
+	console.log(vec2);
+	console.log(vec22);
+	
+
+	LSys = new LSystem(); 
+	LSys.Seed();
 	//what is this passed?  A city type?  a seed?  Do I create many
 	//and those are placed out in the world and eventually connect to each other?
 	//Do I need an infulence map?
@@ -94,6 +105,7 @@ function init(){
 	//do I even need to worry about that at the moment?
 	//is there a good way to get the road system to build visably
 	//probably by starting it here and having it update the stack once per update
+	
 
 }
 
@@ -104,12 +116,19 @@ function debugFunc(){
 	scene.add(mesh2);
 	mesh.position.set(0,0,0);
 	var x = 0.3;
-	var y = 0.0003;
+	var y = 0.4;
 	mesh2.position.set(x,y,0);
-	console.log(Math.atan2(y, x)); //atan2 is y,x
 	var ang = Math.atan2(y, x);
 	drawLine(0,0,Math.cos(ang), Math.sin(ang));
 
+	var tes = { 
+		name : "hello",
+		angle: 16,
+		list: [1,3,5,3]
+	};
+	console.log(tes.name);
+	console.log(tes.angle);
+	console.log(tes.list[2]);
 }
 
 function drawLine(point1x, point1y, point2x, point2y){
@@ -130,11 +149,6 @@ function drawLineAngle(point1x, point1y, angle){
 	}
 }
 
-function Lsystem(){
-
-	
-}
-
 function recursiveLine(last, angle, step){
 	console.log(step);
 	if (step == 0){	return 0;}	
@@ -153,6 +167,11 @@ function recursiveLine(last, angle, step){
 }
 
 function render() {
+	if (delay == 30){
+		delay = 0;
+		LSys.Expand();
+	}
+	delay++;
 	//cycleVerts();
 	currentTime = Date.now();
 	deltaTime = (currentTime - lastTime) / 1000;
@@ -161,8 +180,6 @@ function render() {
 	requestAnimationFrame(render);	
 	renderer.render(scene, camera);
 }
-
-
 
 function onDocumentMouseDown(event){
 	event.preventDefault();
@@ -192,7 +209,6 @@ function onWindowResize(){
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
 }
-
 
 function onDocumentKeyDown(event){
 	//console.log("\n\n\nKEYY\n\n\n");
@@ -292,6 +308,21 @@ function onDocumentKeyDown(event){
 	}
 	*/
 }
+
+//this is an experiement
+THREE.Vector2.prototype.rotateAround = function ( center, angle ) {
+
+		var c = Math.cos( angle ), s = Math.sin( angle );
+
+		var x = this.x - center.x;
+		var y = this.y - center.y;
+
+		this.x = x * c - y * s + center.x;
+		this.y = x * s + y * c + center.y;
+
+		return this;
+
+}  
 
 
 
