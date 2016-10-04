@@ -33,6 +33,13 @@
 	var delay = 30;
 	var LSys;
 
+	var GlobalHeightMod = 0;
+	var GHModInc = 0.0001;
+
+	var SuperLineMesh;
+	var redLineMat;
+	var redSuperLineMesh;
+
 	//base stuff
 	var basicMaterial;
 
@@ -50,7 +57,12 @@ function init(){
 	geometry.translate(0,0,-0.003)
 	material = new THREE.MeshLambertMaterial( { color: 0x002200 } );
 	plane = new THREE.Mesh( geometry, material );
-	scene.add( plane );
+	//scene.add( plane );
+	
+	directionalLight = new THREE.DirectionalLight( 0x555555, 100 );
+	directionalLight.position.set( 1, 10,1 );
+	directionalLight.rotation.x = 0.8;
+	scene.add( directionalLight );
 	
 	directionalLight = new THREE.DirectionalLight( 0x555555, 100 );
 	directionalLight.position.set( 1, 10,1 );
@@ -75,6 +87,7 @@ function init(){
 	
 	
 	Math.seedrandom(0)
+	//Math.seedrandom(0)
 	console.log(Math.random());
 	
 	
@@ -94,7 +107,25 @@ function init(){
 	var vec22 = vec2.rotateAround({x:0, y:0}, Math.PI/2);
 	console.log(vec2);
 	console.log(vec22);
-	
+
+
+	LineMat = new THREE.LineBasicMaterial( { color: 0x444444 } );
+	var emptyGeo = new THREE.BufferGeometry();
+	var VertPos = new Float32Array( 10000 * 3);
+	emptyGeo.addAttribute( "position" ,  new THREE.BufferAttribute(VertPos, 3) );
+	emptyGeo.drawRange.count = 2;
+	emptyGeo.computeBoundingSphere();
+	SuperLineMesh = new THREE.LineSegments(emptyGeo, LineMat);
+	scene.add(SuperLineMesh);
+//debug lines
+	redLineMat = new THREE.LineBasicMaterial( { color: 0xff4444 } );
+	emptyGeo = new THREE.BufferGeometry();
+	VertPos = new Float32Array( 10000 * 3);
+	emptyGeo.addAttribute( "position" ,  new THREE.BufferAttribute(VertPos, 3) );
+	emptyGeo.drawRange.count = 2;
+	emptyGeo.computeBoundingSphere();
+	redSuperLineMesh = new THREE.LineSegments(emptyGeo, redLineMat);
+	scene.add(redSuperLineMesh);
 
 	LSys = new LSystem(); 
 	LSys.Seed();
@@ -105,37 +136,42 @@ function init(){
 	//do I even need to worry about that at the moment?
 	//is there a good way to get the road system to build visably
 	//probably by starting it here and having it update the stack once per update
-	
-
 }
 
-function debugFunc(){
-	var mesh = new THREE.Mesh(new THREE.BoxGeometry(0.01,0.01,0.01), basicMaterial);
-	scene.add(mesh);
-	var mesh2 = new THREE.Mesh(new THREE.BoxGeometry(0.01,0.01,0.01), basicMaterial);
-	scene.add(mesh2);
-	mesh.position.set(0,0,0);
-	var x = 0.3;
-	var y = 0.4;
-	mesh2.position.set(x,y,0);
-	var ang = Math.atan2(y, x);
-	drawLine(0,0,Math.cos(ang), Math.sin(ang));
-
-	var tes = { 
-		name : "hello",
-		angle: 16,
-		list: [1,3,5,3]
-	};
-	console.log(tes.name);
-	console.log(tes.angle);
-	console.log(tes.list[2]);
+function c(pri){
+	console.log(pri);
 }
 
 function drawLine(point1x, point1y, point2x, point2y){
-	var geo = new THREE.Geometry();
-	geo.vertices.push(new THREE.Vector3(point1x, point1y, 0), new THREE.Vector3(point2x, point2y, 0));
-	var mesh = new THREE.Line(geo, LineMat);
-	scene.add(mesh);
+	var pos = SuperLineMesh.geometry.getAttribute('position');
+	var drawRangeNum = SuperLineMesh.geometry.drawRange.count;
+
+	pos.setXYZ(drawRangeNum, point1x, point1y, 0);
+	pos.setXYZ(drawRangeNum + 1, point2x, point2y, 0);
+	//pos.setXYZ(drawRangeNum, point1x, point1y, GlobalHeightMod);
+	//pos.setXYZ(drawRangeNum + 1, point2x, point2y, GlobalHeightMod);
+	pos.needsUpdate = true;
+
+	//GlobalHeightMod += GHModInc;
+
+	SuperLineMesh.geometry.drawRange.count += 2;
+
+}
+//redDebug
+function reddrawLine(point1x, point1y, point2x, point2y){
+	var pos = redSuperLineMesh.geometry.getAttribute('position');
+	var drawRangeNum = redSuperLineMesh.geometry.drawRange.count;
+
+	pos.setXYZ(drawRangeNum, point1x, point1y, 0);
+	pos.setXYZ(drawRangeNum + 1, point2x, point2y, 0);
+	//pos.setXYZ(drawRangeNum, point1x, point1y, GlobalHeightMod);
+	//pos.setXYZ(drawRangeNum + 1, point2x, point2y, GlobalHeightMod);
+	pos.needsUpdate = true;
+
+	//GlobalHeightMod += GHModInc;
+
+	redSuperLineMesh.geometry.drawRange.count += 2;
+
 }
 
 function drawLineAngle(point1x, point1y, angle){
@@ -167,17 +203,20 @@ function recursiveLine(last, angle, step){
 }
 
 function render() {
-	if (delay == 30){
+	if (delay >= 30){
 		delay = 0;
 		LSys.Expand();
 	}
 	delay++;
+	//console.log(delay);
 	//cycleVerts();
 	currentTime = Date.now();
 	deltaTime = (currentTime - lastTime) / 1000;
 	lastTime = currentTime;
 	//console.log(deltaTime);
-	requestAnimationFrame(render);	
+	setTimeout( function() {
+		requestAnimationFrame(render);	
+	}, 1000 / 30);
 	renderer.render(scene, camera);
 }
 
