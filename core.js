@@ -7,8 +7,9 @@
 	var geometry;
 	var material;
 	var plane;
-	var planeWidth = 1;
-	var planeHeight = 1;
+	var planeWidth = 2;
+	var planeHeight = 2;
+	var planeSubDiv = 100;
 	var lastTime = Date.now();
 	var currentTime = 0;
 	var deltaTime = 0;
@@ -16,7 +17,31 @@
 	var mouseVec;
 	//var projector;
 	var raycaster; //?
+	var directionalLight;
+	var pointLight;
 	
+	var vertIndex = 0;
+	var verts;
+	var gui = new dat.GUI();
+	var savedInt = 0;
+	var GradientGrid;
+	
+	var LineMat;
+	var lineMesh;
+	var raycaster;
+
+	var delay = 30;
+	var LSys;
+
+	var GlobalHeightMod = 0;
+	var GHModInc = 0.0001;
+
+	var SuperLineMesh;
+	var redLineMat;
+	var redSuperLineMesh;
+
+	//base stuff
+	var basicMaterial;
 
 function init(){
 	scene = new THREE.Scene();
@@ -28,39 +53,162 @@ function init(){
 	camControls = new THREE.OrbitControls(camera);
 	camControls.addEventListener( 'change', render);
 	
-	geometry = new THREE.PlaneGeometry(planeWidth,planeHeight);
-	material = new THREE.MeshBasicMaterial( { color: 0x19A81E } );
+	geometry = new THREE.PlaneGeometry(planeWidth,planeHeight,planeSubDiv,planeSubDiv);  //range is 0 to 10200 or x0-100 y0-100
+	geometry.translate(0,0,-0.003)
+	material = new THREE.MeshLambertMaterial( { color: 0x002200 } );
 	plane = new THREE.Mesh( geometry, material );
-	scene.add( plane );
+	//scene.add( plane );
+	
+	directionalLight = new THREE.DirectionalLight( 0x555555, 100 );
+	directionalLight.position.set( 1, 10,1 );
+	directionalLight.rotation.x = 0.8;
+	scene.add( directionalLight );
 	
 	//projector = new THREE.Projector();
+	raycaster = new THREE.Raycaster();
+	raycaster.linePrecision = 0.001;
+
+	basicMaterial = new THREE.MeshBasicMaterial({ color: 0xff5555	});
 
 	camera.position.z = 2;
 	camera.position.y = -1; //lil hight boost, lil less
-	camera.position.x = 0; //lil hight boost, lil less
+	camera.position.x = 0; 
 	camera.rotation.x = 0.5;
 
 	document.addEventListener("keydown",onDocumentKeyDown,false);
 	//if (mode == 2){	document.addEventListener("mousedown",onDocumentMouseDown,false);}
 	window.addEventListener("resize", onWindowResize, false);
 	
-	console.log(plane.geometry);
-	var verts = plane.geometry.vertices;
-	for (var vert = 0; vert < verts.length; vert++){
-		verts[vert].z = Math.random();
-		console.log(verts[vert]);
-	}
-	plane.verticesNeedUpdate;
 	
+	//Math.seedrandom(0)
+	console.log(Math.random());
+	
+	
+	options = {
+		randomSeed: 10
+	};
+	
+	gui.add(options, "randomSeed", 0, 30);
+	
+	//drawLine(1,1,0,0);
+	//recursiveLine([0,0], 0, 4);
+	
+
+	var vec2 = new THREE.Vector2(1,0);
+	console.log(vec2);
+	var vec22 = vec2.rotateAround({x:0, y:0}, Math.PI/2);
+	console.log(vec2);
+	console.log(vec22);
+
+
+	LineMat = new THREE.LineBasicMaterial( { color: 0x444444 } );
+	var emptyGeo = new THREE.BufferGeometry();
+	var VertPos = new Float32Array( 10000 * 3);
+	emptyGeo.addAttribute( "position" ,  new THREE.BufferAttribute(VertPos, 3) );
+	emptyGeo.drawRange.count = 2;
+	emptyGeo.computeBoundingSphere();
+	SuperLineMesh = new THREE.LineSegments(emptyGeo, LineMat);
+	scene.add(SuperLineMesh);
+//debug lines
+	redLineMat = new THREE.LineBasicMaterial( { color: 0xff4444 } );
+	emptyGeo = new THREE.BufferGeometry();
+	VertPos = new Float32Array( 10000 * 3);
+	emptyGeo.addAttribute( "position" ,  new THREE.BufferAttribute(VertPos, 3) );
+	emptyGeo.drawRange.count = 2;
+	emptyGeo.computeBoundingSphere();
+	redSuperLineMesh = new THREE.LineSegments(emptyGeo, redLineMat);
+	scene.add(redSuperLineMesh);
+
+	LSys = new LSystem(); 
+	LSys.Seed();
+	//what is this passed?  A city type?  a seed?  Do I create many
+	//and those are placed out in the world and eventually connect to each other?
+	//Do I need an infulence map?
+	//can I create that in code and generate it procedurally?
+	//do I even need to worry about that at the moment?
+	//is there a good way to get the road system to build visably
+	//probably by starting it here and having it update the stack once per update
+}
+
+function c(pri){
+	console.log(pri);
+}
+
+function drawLine(point1x, point1y, point2x, point2y){
+	var pos = SuperLineMesh.geometry.getAttribute('position');
+	var drawRangeNum = SuperLineMesh.geometry.drawRange.count;
+
+	pos.setXYZ(drawRangeNum, point1x, point1y, 0);
+	pos.setXYZ(drawRangeNum + 1, point2x, point2y, 0);
+	//pos.setXYZ(drawRangeNum, point1x, point1y, GlobalHeightMod);
+	//pos.setXYZ(drawRangeNum + 1, point2x, point2y, GlobalHeightMod);
+	pos.needsUpdate = true;
+
+	//GlobalHeightMod += GHModInc;
+
+	SuperLineMesh.geometry.drawRange.count += 2;
+
+}
+//redDebug
+function reddrawLine(point1x, point1y, point2x, point2y){
+	var pos = redSuperLineMesh.geometry.getAttribute('position');
+	var drawRangeNum = redSuperLineMesh.geometry.drawRange.count;
+
+	pos.setXYZ(drawRangeNum, point1x, point1y, 0);
+	pos.setXYZ(drawRangeNum + 1, point2x, point2y, 0);
+	//pos.setXYZ(drawRangeNum, point1x, point1y, GlobalHeightMod);
+	//pos.setXYZ(drawRangeNum + 1, point2x, point2y, GlobalHeightMod);
+	pos.needsUpdate = true;
+
+	//GlobalHeightMod += GHModInc;
+
+	redSuperLineMesh.geometry.drawRange.count += 2;
 
 }
 
+function drawLineAngle(point1x, point1y, angle){
+	var point2x = Math.cos(angle)*0.01 + point1x;
+	var point2y = Math.sin(angle)*0.01 + point1y;
+	if (checkOverlap([point1x, point1y,0], [point2x, point2y, 0]) == false){
+		drawLine(point1x, point1y, point2x, point2y);
+		return [point2x, point2y];
+	} else {
+		return false;
+	}
+}
+
+function recursiveLine(last, angle, step){
+	console.log(step);
+	if (step == 0){	return 0;}	
+	else{step = step - 1;}
+	angle += (Math.random() - 0.5);
+	//would change angle or branch here
+	last = drawLineAngle(last[0], last[1], angle);
+	if (last != false){	//check to see if the road section did not overlap
+		recursiveLine(last, angle, step); 
+		if (Math.random() > 0.9){
+			//angle = angle+PI/2;
+			recursiveLine(last, angle+PI/2, step);
+		}
+	return 0;
+	}
+}
+
 function render() {
+	if (delay >= 30){
+		delay = 0;
+		LSys.Expand();
+	}
+	delay++;
+	//console.log(delay);
+	//cycleVerts();
 	currentTime = Date.now();
-	deltaTime = (currentTime - lastTime) / 1000; 
+	deltaTime = (currentTime - lastTime) / 1000;
 	lastTime = currentTime;
 	//console.log(deltaTime);
-	requestAnimationFrame(render);	
+	setTimeout( function() {
+		requestAnimationFrame(render);	
+	}, 1000 / 30);
 	renderer.render(scene, camera);
 }
 
@@ -92,7 +240,6 @@ function onWindowResize(){
 	camera.updateProjectionMatrix();
 	renderer.setSize( window.innerWidth, window.innerHeight );
 }
-
 
 function onDocumentKeyDown(event){
 	//console.log("\n\n\nKEYY\n\n\n");
@@ -192,6 +339,21 @@ function onDocumentKeyDown(event){
 	}
 	*/
 }
+
+//this is an experiement
+THREE.Vector2.prototype.rotateAround = function ( center, angle ) {
+
+		var c = Math.cos( angle ), s = Math.sin( angle );
+
+		var x = this.x - center.x;
+		var y = this.y - center.y;
+
+		this.x = x * c - y * s + center.x;
+		this.y = x * s + y * c + center.y;
+
+		return this;
+
+}  
 
 
 
