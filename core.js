@@ -86,16 +86,17 @@ function init(){
 	window.addEventListener("resize", onWindowResize, false);
 	
 	
-	Math.seedrandom(0)
-	//Math.seedrandom(0)
+	var timeMilli = new Date();
+	Math.seedrandom(timeMilli.getMilliseconds());
 	console.log(Math.random());
+	console.log("updatesAdded");
 	
 	
-	options = {
-		randomSeed: 10
-	};
+	//options = {
+		//randomSeed: 10
+	//};
 	
-	gui.add(options, "randomSeed", 0, 30);
+	//gui.add(options, "randomSeed", 0, 30);
 	
 	//drawLine(1,1,0,0);
 	//recursiveLine([0,0], 0, 4);
